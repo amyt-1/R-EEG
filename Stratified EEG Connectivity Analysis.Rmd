@@ -126,7 +126,7 @@ age_tests_ablation_stratified <- conn2 %>%
 age_tests_ablation_stratified
 ```
 
-The demographic file contained five subjects between 35 and 60, but none of those subjects were present in the connectivity summary data. Therefore, the main age split and the ablation split used the same effective connectivity sample.
+The demographic file contained five subjects between 35 and 60, but none of those subjects were present in the connectivity summary data. The main age split and the ablation split used the same effective connectivity sample.
 
 ### # ks tests
 
