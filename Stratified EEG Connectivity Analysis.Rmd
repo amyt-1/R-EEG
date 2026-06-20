@@ -10,8 +10,9 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(rstatix)
 library(car)
+library(vegan)
 
-base_dir <- "D:/EEG"
+base_dir <- "D:/EEG/R-EEG"
 
 methods <- c("dSPM", "eLORETA")
 conn_types <- c("imcoh", "wpli2_debiased")
@@ -271,4 +272,61 @@ wpli_vs_imcoh <- conn2 %>%
   arrange(p_fdr_stratified)
 
 wpli_vs_imcoh
+```
+
+### PERMANOVA and PERMDISP
+```{r}
+run_permanova <- function(data, age_var, inv_method) {
+  
+  wide_data <- data %>%
+    filter(inverse_method == inv_method, band %in% bands, method %in% conn_types, 
+           !is.na(.data[[age_var]])) %>%
+    select(subject, age_group = all_of(age_var), band, task, method, 
+           bootstrap_mean) %>%
+    unite(feature, band, task, method, sep = "_") %>%
+    pivot_wider(names_from = feature, values_from = bootstrap_mean) %>%
+    drop_na()
+  
+  print(wide_data %>% count(age_group))
+  
+  X <- wide_data %>% select(-subject, -age_group)
+  
+  meta <- wide_data %>% select(subject, age_group)
+  
+  permanova <- adonis2(X ~ age_group, data = meta, method = "euclidean", 
+                       permutations = 9999)
+  
+  dist_mat <- dist(X)
+  
+  disp <- betadisper(dist_mat, meta$age_group)
+  
+  permdisp <- permutest(disp, permutations = 9999)
+  
+  list(data_counts = wide_data %>% count(age_group), permanova = permanova, 
+       permdisp = permdisp)
+  }
+
+permanova_dspm_main <- run_permanova(conn2, age_var = "age_group_main", 
+                                     inv_method = "dSPM")
+
+permanova_eloreta_main <- run_permanova(conn2, age_var = "age_group_main",
+                                        inv_method = "eLORETA")
+
+permanova_dspm_ablation <- run_permanova(conn2, age_var = "age_group_ablation",
+                                         inv_method = "dSPM")
+
+permanova_eloreta_ablation <- run_permanova(conn2, age_var = "age_group_ablation", 
+                                            inv_method = "eLORETA")
+
+permanova_dspm_main$permanova
+permanova_dspm_main$permdisp
+
+permanova_eloreta_main$permanova
+permanova_eloreta_main$permdisp
+
+permanova_dspm_ablation$permanova
+permanova_dspm_ablation$permdisp
+
+permanova_eloreta_ablation$permanova
+permanova_eloreta_ablation$permdisp
 ```
